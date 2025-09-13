@@ -11,6 +11,7 @@ try {
   importScripts('save_text.js');
   importScripts('save_markdown.js');
   importScripts('gemini_api.js');
+  importScripts('discourse.js');
 } catch (e) {
   console.error('Failed to import scripts:', e);
 }
@@ -23,6 +24,10 @@ function getSettings(callback) {
     geminiPromptHtml: 'Summarize this HTML content.',
     geminiPromptMarkdown: 'Summarize this Markdown content.',
     geminiPromptImage: 'Describe this image.',
+    discourseApiUrl: '',
+    discourseApiKey: '',
+    discourseApiUsername: '',
+    discourseCategoryId: '',
   };
   const keys = Object.keys(DEFAULTS);
   chrome.storage.sync.get(keys, (items) => {
@@ -87,6 +92,15 @@ function handleGeminiAnalysis(contentType, contentFetcher) {
 
       const filename = `${safeTitle}-gemini-${contentType}-analysis.txt`;
       downloadTextAsFile(result.text, filename);
+
+      let postTitle = `Gemini Analysis of: ${tab.title || 'a page'}`;
+      const titleMatch = result.text.match(/^#+\s*(.*)/m);
+      if (titleMatch && titleMatch[1]) {
+        postTitle = titleMatch[1].trim();
+      }
+      
+      const imageContentForDiscourse = contentType === 'image' ? content : null;
+      await postToDiscourse(settings, postTitle, result.text, imageContentForDiscourse);
 
     } catch (error) {
       console.error(`Error during Gemini ${contentType} analysis:`, error);

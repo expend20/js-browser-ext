@@ -81,6 +81,12 @@ setupCollapsible('settings-toggle', 'settings-body', false);
   const geminiPromptMarkdownEl = document.getElementById('gemini-prompt-markdown');
   const geminiPromptImageEl = document.getElementById('gemini-prompt-image');
 
+  // Discourse settings elements
+  const discourseApiUrlEl = document.getElementById('discourse-api-url');
+  const discourseApiKeyEl = document.getElementById('discourse-api-key');
+  const discourseApiUsernameEl = document.getElementById('discourse-api-username');
+  const discourseCategoryIdEl = document.getElementById('discourse-category-id');
+
   const DEFAULTS = {
     format: 'image/webp',
     quality: 0.8,
@@ -89,6 +95,10 @@ setupCollapsible('settings-toggle', 'settings-body', false);
     geminiPromptHtml: 'Summarize this HTML content.',
     geminiPromptMarkdown: 'Summarize this Markdown content.',
     geminiPromptImage: 'Describe this image.',
+    discourseApiUrl: '',
+    discourseApiKey: '',
+    discourseApiUsername: '',
+    discourseCategoryId: '',
   };
 
   const settingsKeys = Object.keys(DEFAULTS);
@@ -103,6 +113,11 @@ setupCollapsible('settings-toggle', 'settings-body', false);
     geminiPromptHtmlEl.value = items.geminiPromptHtml || DEFAULTS.geminiPromptHtml;
     geminiPromptMarkdownEl.value = items.geminiPromptMarkdown || DEFAULTS.geminiPromptMarkdown;
     geminiPromptImageEl.value = items.geminiPromptImage || DEFAULTS.geminiPromptImage;
+
+    discourseApiUrlEl.value = items.discourseApiUrl || DEFAULTS.discourseApiUrl;
+    discourseApiKeyEl.value = items.discourseApiKey || DEFAULTS.discourseApiKey;
+    discourseApiUsernameEl.value = items.discourseApiUsername || DEFAULTS.discourseApiUsername;
+    discourseCategoryIdEl.value = items.discourseCategoryId || DEFAULTS.discourseCategoryId;
   });
 
   qualityEl.addEventListener('input', () => {
@@ -118,6 +133,10 @@ setupCollapsible('settings-toggle', 'settings-body', false);
       geminiPromptHtml: geminiPromptHtmlEl.value,
       geminiPromptMarkdown: geminiPromptMarkdownEl.value,
       geminiPromptImage: geminiPromptImageEl.value,
+      discourseApiUrl: discourseApiUrlEl.value,
+      discourseApiKey: discourseApiKeyEl.value,
+      discourseApiUsername: discourseApiUsernameEl.value,
+      discourseCategoryId: discourseCategoryIdEl.value,
     };
     chrome.storage.sync.set(newSettings, () => {
       window.close();
