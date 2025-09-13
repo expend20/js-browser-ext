@@ -34,8 +34,9 @@ function handleSaveHtml() {
       }
     }, (results) => {
       const content = results && results[0] && results[0].result ? results[0].result : '';
-      const safeTitle = (tab.title || 'page').replace(/[^a-z0-9\-_. ]+/gi, '_').trim() || 'page';
+      const safeTitle = (typeof sanitizeBaseFilename === 'function') ? sanitizeBaseFilename(tab.title || 'page') : (tab.title || 'page');
       const filename = safeTitle + '.html';
+      try { console.log('[save_html] filename info:', { originalTitle: tab.title, sanitizedBase: safeTitle, finalFilename: filename }); } catch (_) {}
       downloadTextAsFile(content, filename);
     });
   });

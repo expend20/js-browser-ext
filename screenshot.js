@@ -55,6 +55,23 @@ function startDownloadFromBlob(blob, filename) {
   }
 }
 
+function getDefaultCaptureSettings() {
+  return { format: 'image/webp', quality: 0.8 };
+}
+
+function getCaptureSettings(callback) {
+  try {
+    chrome.storage.sync.get(['format', 'quality'], (items) => {
+      const defaults = getDefaultCaptureSettings();
+      const format = items && items.format ? items.format : defaults.format;
+      const quality = (items && typeof items.quality === 'number') ? items.quality : defaults.quality;
+      callback({ format, quality });
+    });
+  } catch (_) {
+    callback(getDefaultCaptureSettings());
+  }
+}
+
 function captureViaTabs() {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const tab = tabs && tabs[0];
@@ -62,6 +79,19 @@ function captureViaTabs() {
 
     const tabId = tab.id;
     console.log('[capture] start tabId=', tabId, 'url=', tab.url);
+
+    getCaptureSettings(({ format: outputType, quality: outputQuality }) => {
+      const extMap = {
+        'image/webp': 'webp',
+        'image/jpeg': 'jpg',
+        'image/png': 'png',
+      };
+      const ext = extMap[outputType] || 'png';
+      const safeTitle = sanitizeBaseFilename(tab.title || 'screenshot');
+      const outputFilename = safeTitle + '.' + ext;
+      console.log('[capture] filename info:', { originalTitle: tab.title, sanitizedBase: safeTitle, finalFilename: outputFilename });
+      const tileCaptureFormat = (outputType === 'image/jpeg') ? 'jpeg' : 'png';
+      const tileJpegQuality = Math.max(0, Math.min(100, Math.round((outputQuality || 0.8) * 100)));
 
     // 1) Identify the primary scroll container and measure dimensions
     chrome.scripting.executeScript(
@@ -198,9 +228,12 @@ function captureViaTabs() {
               },
             },
             () => {
-              canvas.convertToBlob({ type: 'image/png' }).then((blob) => {
-                console.log('[capture] saving image blob size=', blob.size);
-                startDownloadFromBlob(blob);
+              const opts = (outputType === 'image/jpeg' || outputType === 'image/webp')
+                ? { type: outputType, quality: Math.max(0, Math.min(1, outputQuality || 0.8)) }
+                : { type: outputType };
+              canvas.convertToBlob(opts).then((blob) => {
+                console.log('[capture] saving image type=', outputType, 'size=', blob.size);
+                startDownloadFromBlob(blob, outputFilename);
               }).catch(err => {
                 console.error('Finalizing image failed:', err);
               });
@@ -265,7 +298,8 @@ function captureViaTabs() {
               console.log('[capture] throttle delay ms=', delay);
               setTimeout(() => {
                 lastCaptureAt = Date.now();
-                chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' }, (dataUrl) => {
+                const captureOpts = (tileCaptureFormat === 'jpeg') ? { format: 'jpeg', quality: tileJpegQuality } : { format: 'png' };
+                chrome.tabs.captureVisibleTab(tab.windowId, captureOpts, (dataUrl) => {
                   if (chrome.runtime.lastError) {
                     console.error('captureVisibleTab error:', chrome.runtime.lastError.message);
                   }
@@ -354,6 +388,7 @@ function captureViaTabs() {
         );
       }
     );
+    });
   });
 }
 

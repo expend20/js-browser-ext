@@ -106,8 +106,9 @@ async function handleSaveHtmlImages() {
           }
         }, (rewriteResults) => {
           const content = rewriteResults && rewriteResults[0] && rewriteResults[0].result ? rewriteResults[0].result : (doctype + html);
-          const safeTitle = (tab.title || 'page').replace(/[^a-z0-9\-_. ]+/gi, '_').trim() || 'page';
+          const safeTitle = (typeof sanitizeBaseFilename === 'function') ? sanitizeBaseFilename(tab.title || 'page') : (tab.title || 'page');
           const filename = safeTitle + '.inline.html';
+          try { console.log('[save_html_images] filename info:', { originalTitle: tab.title, sanitizedBase: safeTitle, finalFilename: filename }); } catch (_) {}
           downloadTextAsFile(content, filename);
         });
       });

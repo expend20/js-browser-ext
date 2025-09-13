@@ -4,6 +4,7 @@
 // Import the screenshot functions into the service worker global via importScripts.
 // MV3 service workers support importScripts for classic scripts.
 try {
+  importScripts('shared_utils.js');
   importScripts('screenshot.js');
   importScripts('save_html.js');
   importScripts('save_html_images.js');
