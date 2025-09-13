@@ -8,6 +8,7 @@ try {
   importScripts('screenshot.js');
   importScripts('save_html.js');
   importScripts('save_html_images.js');
+  importScripts('save_text.js');
 } catch (e) {
   console.error('Failed to import scripts:', e);
 }
@@ -48,4 +49,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request && request.action === 'save_html_images') {
     if (typeof handleSaveHtmlImages === 'function') handleSaveHtmlImages();
   }
+  if (request && request.action === 'save_visible_text') {
+    if (typeof handleSaveVisibleText === 'function') handleSaveVisibleText();
+  }
 });
+

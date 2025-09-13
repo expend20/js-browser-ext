@@ -10,6 +10,10 @@ document.getElementById('save-html-images').addEventListener('click', () => {
   chrome.runtime.sendMessage({ action: 'save_html_images' });
 });
 
+document.getElementById('save-visible-text').addEventListener('click', () => {
+  chrome.runtime.sendMessage({ action: 'save_visible_text' });
+});
+
 // Settings: load existing values
 (function initSettings() {
   const formatEl = document.getElementById('format');
