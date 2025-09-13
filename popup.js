@@ -1,4 +1,4 @@
-document.getElementById('capture').addEventListener('click', () => {
+document.getElementById('save-screenshot').addEventListener('click', () => {
   chrome.runtime.sendMessage({ action: 'capture' });
 });
 
@@ -18,24 +18,91 @@ document.getElementById('save-markdown').addEventListener('click', () => {
   chrome.runtime.sendMessage({ action: 'save_markdown' });
 });
 
+document.getElementById('gemini-analyze-html').addEventListener('click', () => {
+  chrome.runtime.sendMessage({ action: 'gemini_analyze_html' });
+});
+
+document.getElementById('gemini-analyze-markdown').addEventListener('click', () => {
+  chrome.runtime.sendMessage({ action: 'gemini_analyze_markdown' });
+});
+
+document.getElementById('gemini-analyze-screenshot').addEventListener('click', () => {
+  chrome.runtime.sendMessage({ action: 'gemini_analyze_screenshot' });
+});
+
+// Reusable collapsible section handler
+function setupCollapsible(toggleBtnId, bodyId, startExpanded = false) {
+  const toggleBtn = document.getElementById(toggleBtnId);
+  const bodyEl = document.getElementById(bodyId);
+  if (!toggleBtn || !bodyEl) return;
+
+  const setExpanded = (expanded) => {
+    toggleBtn.setAttribute('aria-expanded', String(expanded));
+    if (expanded) {
+      bodyEl.style.maxHeight = bodyEl.scrollHeight + 'px';
+    } else {
+      bodyEl.style.maxHeight = '0px';
+    }
+  };
+
+  setExpanded(startExpanded);
+
+  toggleBtn.addEventListener('click', () => {
+    const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+    setExpanded(!isExpanded);
+  });
+
+  // Adjust maxHeight on content changes for smoother UX
+  const observer = new ResizeObserver(() => {
+    if (toggleBtn.getAttribute('aria-expanded') === 'true') {
+      bodyEl.style.maxHeight = bodyEl.scrollHeight + 'px';
+    }
+  });
+  observer.observe(bodyEl);
+}
+
+// Initialize all collapsible sections
+setupCollapsible('save-actions-toggle', 'save-actions-body', false);
+setupCollapsible('gemini-actions-toggle', 'gemini-actions-body', false);
+setupCollapsible('settings-toggle', 'settings-body', false);
+
+
 // Settings: load existing values
 (function initSettings() {
   const formatEl = document.getElementById('format');
   const qualityEl = document.getElementById('quality');
   const qualityValue = document.getElementById('qualityValue');
   const saveBtn = document.getElementById('save-settings');
-  const toggleBtn = document.getElementById('settings-toggle');
-  const settingsBody = document.getElementById('settings-body');
-  if (!formatEl || !qualityEl || !qualityValue || !saveBtn) return;
+  
+  // Gemini settings elements
+  const geminiApiKeyEl = document.getElementById('gemini-api-key');
+  const geminiModelEl = document.getElementById('gemini-model');
+  const geminiPromptHtmlEl = document.getElementById('gemini-prompt-html');
+  const geminiPromptMarkdownEl = document.getElementById('gemini-prompt-markdown');
+  const geminiPromptImageEl = document.getElementById('gemini-prompt-image');
 
-  const DEFAULTS = { format: 'image/webp', quality: 0.8 };
+  const DEFAULTS = {
+    format: 'image/webp',
+    quality: 0.8,
+    geminiApiKey: '',
+    geminiModel: 'gemini-2.5-flash',
+    geminiPromptHtml: 'Summarize this HTML content.',
+    geminiPromptMarkdown: 'Summarize this Markdown content.',
+    geminiPromptImage: 'Describe this image.',
+  };
 
-  chrome.storage.sync.get(['format', 'quality'], (items) => {
-    const fmt = items.format || DEFAULTS.format;
-    const q = (typeof items.quality === 'number') ? items.quality : DEFAULTS.quality;
-    formatEl.value = fmt;
-    qualityEl.value = String(q);
-    qualityValue.textContent = Number(q).toFixed(2);
+  const settingsKeys = Object.keys(DEFAULTS);
+
+  chrome.storage.sync.get(settingsKeys, (items) => {
+    formatEl.value = items.format || DEFAULTS.format;
+    qualityEl.value = String(typeof items.quality === 'number' ? items.quality : DEFAULTS.quality);
+    qualityValue.textContent = Number(qualityEl.value).toFixed(2);
+    
+    geminiApiKeyEl.value = items.geminiApiKey || DEFAULTS.geminiApiKey;
+    geminiModelEl.value = items.geminiModel || DEFAULTS.geminiModel;
+    geminiPromptHtmlEl.value = items.geminiPromptHtml || DEFAULTS.geminiPromptHtml;
+    geminiPromptMarkdownEl.value = items.geminiPromptMarkdown || DEFAULTS.geminiPromptMarkdown;
+    geminiPromptImageEl.value = items.geminiPromptImage || DEFAULTS.geminiPromptImage;
   });
 
   qualityEl.addEventListener('input', () => {
@@ -43,39 +110,17 @@ document.getElementById('save-markdown').addEventListener('click', () => {
   });
 
   saveBtn.addEventListener('click', () => {
-    const fmt = formatEl.value;
-    const q = Math.max(0, Math.min(1, parseFloat(qualityEl.value)));
-    chrome.storage.sync.set({ format: fmt, quality: q }, () => {
+    const newSettings = {
+      format: formatEl.value,
+      quality: Math.max(0, Math.min(1, parseFloat(qualityEl.value))),
+      geminiApiKey: geminiApiKeyEl.value,
+      geminiModel: geminiModelEl.value,
+      geminiPromptHtml: geminiPromptHtmlEl.value,
+      geminiPromptMarkdown: geminiPromptMarkdownEl.value,
+      geminiPromptImage: geminiPromptImageEl.value,
+    };
+    chrome.storage.sync.set(newSettings, () => {
       window.close();
     });
   });
-
-  // Collapsible settings
-  if (toggleBtn && settingsBody) {
-    const setExpanded = (expanded) => {
-      toggleBtn.setAttribute('aria-expanded', String(expanded));
-      // Measure natural height for smooth animation
-      if (expanded) {
-        settingsBody.style.maxHeight = settingsBody.scrollHeight + 'px';
-      } else {
-        settingsBody.style.maxHeight = '0px';
-      }
-    };
-
-    // Start collapsed by default
-    setExpanded(false);
-
-    toggleBtn.addEventListener('click', () => {
-      const expanded = toggleBtn.getAttribute('aria-expanded') === 'true';
-      setExpanded(!expanded);
-    });
-
-    // Adjust maxHeight on content changes (e.g., slider move) for smoother UX
-    const updateHeight = () => {
-      if (toggleBtn.getAttribute('aria-expanded') === 'true') {
-        settingsBody.style.maxHeight = settingsBody.scrollHeight + 'px';
-      }
-    };
-    new ResizeObserver(updateHeight).observe(settingsBody);
-  }
 })();

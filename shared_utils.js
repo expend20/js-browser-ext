@@ -18,4 +18,25 @@ function sanitizeBaseFilename(name) {
   }
 }
 
+function downloadTextAsFile(text, filename) {
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const reader = new FileReader();
+  reader.onloadend = () => {
+    chrome.downloads.download({ url: reader.result, filename }, () => {
+      if (chrome.runtime.lastError) {
+        console.error('Download failed:', chrome.runtime.lastError);
+      }
+    });
+  };
+  reader.readAsDataURL(blob);
+}
+
+function downloadBase64AsFile(dataUrl, filename) {
+  chrome.downloads.download({ url: dataUrl, filename }, () => {
+    if (chrome.runtime.lastError) {
+      console.error('Download failed:', chrome.runtime.lastError.message);
+    }
+  });
+}
+
 

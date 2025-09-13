@@ -72,7 +72,7 @@ function getCaptureSettings(callback) {
   }
 }
 
-function captureViaTabs() {
+function captureViaTabs(returnContent = false, callback) {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const tab = tabs && tabs[0];
     if (!tab) return;
@@ -233,9 +233,18 @@ function captureViaTabs() {
                 : { type: outputType };
               canvas.convertToBlob(opts).then((blob) => {
                 console.log('[capture] saving image type=', outputType, 'size=', blob.size);
-                startDownloadFromBlob(blob, outputFilename);
+                if (returnContent) {
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                    if (typeof callback === 'function') callback(reader.result);
+                  };
+                  reader.readAsDataURL(blob);
+                } else {
+                  startDownloadFromBlob(blob, outputFilename);
+                }
               }).catch(err => {
                 console.error('Finalizing image failed:', err);
+                if (returnContent && typeof callback === 'function') callback(null);
               });
             }
           );

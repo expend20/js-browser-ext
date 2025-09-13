@@ -1,5 +1,5 @@
 // Save Markdown handler: extracts visible HTML and converts to Markdown, downloads as .md
-function handleSaveMarkdown() {
+function handleSaveMarkdown(returnContent = false, callback) {
   try {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const tab = tabs && tabs[0];
@@ -80,6 +80,12 @@ function handleSaveMarkdown() {
           return;
         }
         const md = results && results[0] && results[0].result ? String(results[0].result) : '';
+        
+        if (returnContent) {
+          if (typeof callback === 'function') callback(md);
+          return;
+        }
+
         const safeTitle = (typeof sanitizeBaseFilename === 'function') ? sanitizeBaseFilename(tab.title || 'page') : (tab.title || 'page');
         const filename = safeTitle + '.md';
         const dataUrl = 'data:text/markdown;charset=utf-8,' + encodeURIComponent(md);
