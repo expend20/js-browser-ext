@@ -9,6 +9,7 @@ try {
   importScripts('save_html.js');
   importScripts('save_html_images.js');
   importScripts('save_text.js');
+  importScripts('save_markdown.js');
 } catch (e) {
   console.error('Failed to import scripts:', e);
 }
@@ -51,6 +52,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   if (request && request.action === 'save_visible_text') {
     if (typeof handleSaveVisibleText === 'function') handleSaveVisibleText();
+  }
+  if (request && request.action === 'save_markdown') {
+    if (typeof handleSaveMarkdown === 'function') handleSaveMarkdown();
   }
 });
 

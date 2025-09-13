@@ -14,6 +14,10 @@ document.getElementById('save-visible-text').addEventListener('click', () => {
   chrome.runtime.sendMessage({ action: 'save_visible_text' });
 });
 
+document.getElementById('save-markdown').addEventListener('click', () => {
+  chrome.runtime.sendMessage({ action: 'save_markdown' });
+});
+
 // Settings: load existing values
 (function initSettings() {
   const formatEl = document.getElementById('format');
