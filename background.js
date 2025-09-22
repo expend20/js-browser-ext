@@ -100,7 +100,8 @@ function handleGeminiAnalysis(contentType, contentFetcher) {
       }
       
       const imageContentForDiscourse = contentType === 'image' ? content : null;
-      await postToDiscourse(settings, postTitle, result.text, imageContentForDiscourse);
+      const postBody = `Original URL: ${tab.url}\n\n${result.text}`;
+      await postToDiscourse(settings, postTitle, postBody, imageContentForDiscourse);
 
     } catch (error) {
       console.error(`Error during Gemini ${contentType} analysis:`, error);

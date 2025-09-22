@@ -51,6 +51,7 @@ async function postToDiscourse(settings, title, text, imageContent = null) {
   };
 
   try {
+    console.log('Posting to Discourse:', title);
     const postResponse = await fetch(`${discourseApiUrl}/posts.json`, {
       method: 'POST',
       headers: {
