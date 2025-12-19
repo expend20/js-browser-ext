@@ -131,26 +131,12 @@
   </style>
 </head>
 <body>
-  <h1>Screenshot Capturer</h1>
+  <h1>Save to notes</h1>
   <hr>
 
-  <div id="save-actions" class="card">
-    <button id="save-actions-toggle" class="section-toggle" aria-expanded="false" aria-controls="save-actions-body">
-      <span>Save Page</span>
-      <span class="chev">></span>
-    </button>
-    <div id="save-actions-body" class="section-body">
-      <button id="save-screenshot" class="btn">Save Screenshot</button>
-      <button id="save-html" class="btn">Save HTML</button>
-      <button id="save-html-images" class="btn">Save HTML + Images</button>
-      <button id="save-visible-text" class="btn">Save Visible Text</button>
-      <button id="save-markdown" class="btn">Save Markdown</button>
-    </div>
-  </div>
-
-  <div id="gemini-actions" class="card" style="margin-top: 12px;">
+  <div id="gemini-actions" class="card">
     <button id="gemini-actions-toggle" class="section-toggle" aria-expanded="false" aria-controls="gemini-actions-body">
-      <span>Analyze with Gemini</span>
+      <span>Post to notes</span>
       <span class="chev">></span>
     </button>
     <div id="gemini-actions-body" class="section-body">
@@ -234,6 +220,20 @@
       <div class="save-area">
         <button id="save-settings" class="btn">Save Settings</button>
       </div>
+    </div>
+  </div>
+
+  <div id="save-actions" class="card" style="margin-top: 12px;">
+    <button id="save-actions-toggle" class="section-toggle" aria-expanded="false" aria-controls="save-actions-body">
+      <span>Save Page</span>
+      <span class="chev">></span>
+    </button>
+    <div id="save-actions-body" class="section-body">
+      <button id="save-screenshot" class="btn">Save Screenshot</button>
+      <button id="save-html" class="btn">Save HTML</button>
+      <button id="save-html-images" class="btn">Save HTML + Images</button>
+      <button id="save-visible-text" class="btn">Save Visible Text</button>
+      <button id="save-markdown" class="btn">Save Markdown</button>
     </div>
   </div>
   <script src="popup.js"></script>

@@ -63,7 +63,7 @@ function setupCollapsible(toggleBtnId, bodyId, startExpanded = false) {
 
 // Initialize all collapsible sections
 setupCollapsible('save-actions-toggle', 'save-actions-body', false);
-setupCollapsible('gemini-actions-toggle', 'gemini-actions-body', false);
+setupCollapsible('gemini-actions-toggle', 'gemini-actions-body', true);
 setupCollapsible('discourse-category-toggle', 'discourse-category-body', false);
 setupCollapsible('settings-toggle', 'settings-body', false);
 
