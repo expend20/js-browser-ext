@@ -128,7 +128,21 @@ setupCollapsible('settings-toggle', 'settings-body', false);
     // Load cached categories and set selected value
     chrome.storage.sync.get(['discourseCategories'], (catItems) => {
       allCategories = catItems.discourseCategories || [];
-      populateCategoryDropdown(allCategories, items.discourseCategoryId || DEFAULTS.discourseCategoryId);
+      const savedCategoryId = items.discourseCategoryId || DEFAULTS.discourseCategoryId;
+      populateCategoryDropdown(allCategories, savedCategoryId);
+
+      // Show saved category on load
+      if (savedCategoryId) {
+        const savedCat = allCategories.find(c => String(c.id) === String(savedCategoryId));
+        if (savedCat) {
+          categoryStatusEl.textContent = savedCat.name;
+          categoryStatusEl.style.display = 'block';
+        } else {
+          categoryStatusEl.style.display = 'none';
+        }
+      } else {
+        categoryStatusEl.style.display = 'none';
+      }
     });
   });
 
@@ -161,7 +175,13 @@ setupCollapsible('settings-toggle', 'settings-body', false);
     if (selectedId) {
       chrome.storage.sync.set({ discourseCategoryId: selectedId });
       const selectedCat = allCategories.find(c => String(c.id) === String(selectedId));
-      categoryStatusEl.textContent = selectedCat ? `Selected: ${selectedCat.name}` : '';
+      if (selectedCat) {
+        categoryStatusEl.textContent = `Saved: ${selectedCat.name}`;
+        categoryStatusEl.style.display = 'block';
+        categoryStatusEl.style.background = '#1e3a1e';
+        categoryStatusEl.style.color = '#4ade80';
+        categoryStatusEl.style.borderColor = '#2d5a2d';
+      }
     }
   });
 
@@ -173,11 +193,19 @@ setupCollapsible('settings-toggle', 'settings-body', false);
     };
 
     if (!currentSettings.discourseApiUrl || !currentSettings.discourseApiKey || !currentSettings.discourseApiUsername) {
-      categoryStatusEl.textContent = 'Please fill in API URL, Key, and Username first';
+      categoryStatusEl.textContent = 'Please fill in API URL, Key, and Username in Settings first';
+      categoryStatusEl.style.display = 'block';
+      categoryStatusEl.style.background = '#3a1e1e';
+      categoryStatusEl.style.color = '#f87171';
+      categoryStatusEl.style.borderColor = '#5a2d2d';
       return;
     }
 
     categoryStatusEl.textContent = 'Fetching categories...';
+    categoryStatusEl.style.display = 'block';
+    categoryStatusEl.style.background = '#1e2a3a';
+    categoryStatusEl.style.color = '#60a5fa';
+    categoryStatusEl.style.borderColor = '#2d3a5a';
     console.log('Sending fetch_discourse_categories request with settings:', {
       discourseApiUrl: currentSettings.discourseApiUrl,
       discourseApiUsername: currentSettings.discourseApiUsername,
@@ -194,8 +222,14 @@ setupCollapsible('settings-toggle', 'settings-body', false);
         categoryFilterEl.value = '';
         populateCategoryDropdown(allCategories, discourseCategoryEl.value);
         categoryStatusEl.textContent = `Found ${response.categories.length} categories`;
+        categoryStatusEl.style.background = '#1e3a1e';
+        categoryStatusEl.style.color = '#4ade80';
+        categoryStatusEl.style.borderColor = '#2d5a2d';
       } else {
         categoryStatusEl.textContent = response?.error || 'Failed to fetch categories';
+        categoryStatusEl.style.background = '#3a1e1e';
+        categoryStatusEl.style.color = '#f87171';
+        categoryStatusEl.style.borderColor = '#5a2d2d';
       }
     });
   });

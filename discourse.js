@@ -37,7 +37,7 @@ async function fetchDiscourseCategories(settings) {
 
     const categories = [];
     const processCategory = (cat, parentName = null) => {
-      const displayName = parentName ? `${parentName} → ${cat.name}` : cat.name;
+      const displayName = parentName ? `${parentName} / ${cat.name}` : cat.name;
       categories.push({
         id: cat.id,
         name: displayName,
