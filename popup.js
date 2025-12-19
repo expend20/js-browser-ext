@@ -76,6 +76,7 @@ setupCollapsible('settings-toggle', 'settings-body', false);
   const saveBtn = document.getElementById('save-settings');
   
   // Gemini settings elements
+  const saveDebugFilesEl = document.getElementById('save-debug-files');
   const geminiApiKeyEl = document.getElementById('gemini-api-key');
   const geminiModelEl = document.getElementById('gemini-model');
   const geminiPromptHtmlEl = document.getElementById('gemini-prompt-html');
@@ -90,15 +91,27 @@ setupCollapsible('settings-toggle', 'settings-body', false);
   const fetchCategoriesBtn = document.getElementById('fetch-categories');
   const categoryStatusEl = document.getElementById('category-status');
   const categoryFilterEl = document.getElementById('category-filter');
+  const postCategoryDisplayEl = document.getElementById('post-category-display');
+  const postCategoryNameEl = document.getElementById('post-category-name');
 
   // Store all categories for filtering
   let allCategories = [];
 
+  function updatePostCategoryDisplay(categoryName) {
+    if (categoryName) {
+      postCategoryNameEl.textContent = categoryName;
+      postCategoryDisplayEl.style.display = 'block';
+    } else {
+      postCategoryDisplayEl.style.display = 'none';
+    }
+  }
+
   const DEFAULTS = {
     format: 'image/webp',
     quality: 0.8,
+    saveDebugFiles: false,
     geminiApiKey: '',
-    geminiModel: 'gemini-2.5-flash',
+    geminiModel: 'gemini-flash-latest',
     geminiPromptHtml: 'Summarize this HTML content.',
     geminiPromptMarkdown: 'Summarize this Markdown content.',
     geminiPromptImage: 'Describe this image.',
@@ -115,6 +128,7 @@ setupCollapsible('settings-toggle', 'settings-body', false);
     qualityEl.value = String(typeof items.quality === 'number' ? items.quality : DEFAULTS.quality);
     qualityValue.textContent = Number(qualityEl.value).toFixed(2);
     
+    saveDebugFilesEl.checked = items.saveDebugFiles || DEFAULTS.saveDebugFiles;
     geminiApiKeyEl.value = items.geminiApiKey || DEFAULTS.geminiApiKey;
     geminiModelEl.value = items.geminiModel || DEFAULTS.geminiModel;
     geminiPromptHtmlEl.value = items.geminiPromptHtml || DEFAULTS.geminiPromptHtml;
@@ -137,11 +151,14 @@ setupCollapsible('settings-toggle', 'settings-body', false);
         if (savedCat) {
           categoryStatusEl.textContent = savedCat.name;
           categoryStatusEl.style.display = 'block';
+          updatePostCategoryDisplay(savedCat.name);
         } else {
           categoryStatusEl.style.display = 'none';
+          updatePostCategoryDisplay(null);
         }
       } else {
         categoryStatusEl.style.display = 'none';
+        updatePostCategoryDisplay(null);
       }
     });
   });
@@ -181,6 +198,7 @@ setupCollapsible('settings-toggle', 'settings-body', false);
         categoryStatusEl.style.background = '#1e3a1e';
         categoryStatusEl.style.color = '#4ade80';
         categoryStatusEl.style.borderColor = '#2d5a2d';
+        updatePostCategoryDisplay(selectedCat.name);
       }
     }
   });
@@ -242,6 +260,7 @@ setupCollapsible('settings-toggle', 'settings-body', false);
     const newSettings = {
       format: formatEl.value,
       quality: Math.max(0, Math.min(1, parseFloat(qualityEl.value))),
+      saveDebugFiles: saveDebugFilesEl.checked,
       geminiApiKey: geminiApiKeyEl.value,
       geminiModel: geminiModelEl.value,
       geminiPromptHtml: geminiPromptHtmlEl.value,

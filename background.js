@@ -19,8 +19,9 @@ try {
 // Helper to get settings from storage with defaults
 function getSettings(callback) {
   const DEFAULTS = {
+    saveDebugFiles: false,
     geminiApiKey: '',
-    geminiModel: 'gemini-2.5-flash',
+    geminiModel: 'gemini-flash-latest',
     geminiPromptHtml: 'Summarize this HTML content.',
     geminiPromptMarkdown: 'Summarize this Markdown content.',
     geminiPromptImage: 'Describe this image.',
@@ -63,18 +64,20 @@ function handleGeminiAnalysis(contentType, contentFetcher) {
       
       const safeTitle = (typeof sanitizeBaseFilename === 'function') ? sanitizeBaseFilename(tab.title || 'page') : (tab.title || 'page');
 
-      // Save input file
-      if (contentType === 'html') {
-        const inputFilename = `${safeTitle}-gemini-input.html`;
-        downloadTextAsFile(content, inputFilename);
-      } else if (contentType === 'markdown') {
-        const inputFilename = `${safeTitle}-gemini-input.md`;
-        downloadTextAsFile(content, inputFilename);
-      } else if (contentType === 'image') {
-        const extension = content.mimeType.split('/')[1] || 'png';
-        const inputFilename = `${safeTitle}-gemini-input.${extension}`;
-        if (typeof downloadBase64AsFile === 'function') {
-          downloadBase64AsFile(content.dataUrl, inputFilename);
+      // Save input file (if debug enabled)
+      if (settings.saveDebugFiles) {
+        if (contentType === 'html') {
+          const inputFilename = `${safeTitle}-gemini-input.html`;
+          downloadTextAsFile(content, inputFilename);
+        } else if (contentType === 'markdown') {
+          const inputFilename = `${safeTitle}-gemini-input.md`;
+          downloadTextAsFile(content, inputFilename);
+        } else if (contentType === 'image') {
+          const extension = content.mimeType.split('/')[1] || 'png';
+          const inputFilename = `${safeTitle}-gemini-input.${extension}`;
+          if (typeof downloadBase64AsFile === 'function') {
+            downloadBase64AsFile(content.dataUrl, inputFilename);
+          }
         }
       }
 
@@ -90,8 +93,11 @@ function handleGeminiAnalysis(contentType, contentFetcher) {
         totalTokens: result.totalTokens,
       });
 
-      const filename = `${safeTitle}-gemini-${contentType}-analysis.txt`;
-      downloadTextAsFile(result.text, filename);
+      // Save output file (if debug enabled)
+      if (settings.saveDebugFiles) {
+        const filename = `${safeTitle}-gemini-${contentType}-analysis.txt`;
+        downloadTextAsFile(result.text, filename);
+      }
 
       let postTitle = `Gemini Analysis of: ${tab.title || 'a page'}`;
       const titleMatch = result.text.match(/^#+\s*(.*)/m);
