@@ -182,5 +182,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request && request.action === 'gemini_analyze_screenshot') {
     handleGeminiAnalysis('image', getScreenshotContent);
   }
+  if (request && request.action === 'fetch_discourse_categories') {
+    console.log('background.js: received fetch_discourse_categories request');
+    console.log('background.js: request.settings:', request.settings);
+    (async () => {
+      if (typeof fetchDiscourseCategories === 'function') {
+        console.log('background.js: calling fetchDiscourseCategories...');
+        const settings = request.settings || {};
+        const result = await fetchDiscourseCategories(settings);
+        console.log('background.js: fetchDiscourseCategories result:', result);
+        sendResponse(result);
+      } else {
+        console.error('background.js: fetchDiscourseCategories is not available');
+        sendResponse({ success: false, error: 'fetchDiscourseCategories not available', categories: [] });
+      }
+    })();
+    return true; // Keep channel open for async sendResponse
+  }
 });
 

@@ -151,7 +151,23 @@
   </div>
 
   <hr>
-  <div id="settings" class="card">
+  <div id="discourse-category-section" class="card">
+    <button id="discourse-category-toggle" class="section-toggle" aria-expanded="false" aria-controls="discourse-category-body">
+      <span>Discourse Category</span>
+      <span class="chev">></span>
+    </button>
+    <div id="discourse-category-body" class="section-body">
+      <input type="text" id="category-filter" class="input" placeholder="Type to filter categories..." style="margin-bottom: 8px;">
+      <select id="discourse-category" class="input" style="width: 100%;" size="8">
+      </select>
+      <div style="display: flex; gap: 6px; align-items: center; margin-top: 8px;">
+        <button id="fetch-categories" class="btn" style="flex: 1; margin: 0;">Fetch Categories</button>
+      </div>
+      <span id="category-status" class="muted" style="display: block; margin-top: 4px;"></span>
+    </div>
+  </div>
+
+  <div id="settings" class="card" style="margin-top: 12px;">
     <button id="settings-toggle" class="section-toggle" aria-expanded="false" aria-controls="settings-body">
       <span>Settings</span>
       <span class="chev">></span>
@@ -204,9 +220,6 @@
 
       <label for="discourse-api-username">API Username</label>
       <input type="text" id="discourse-api-username" class="input">
-
-      <label for="discourse-category-id">Category ID</label>
-      <input type="text" id="discourse-category-id" class="input">
 
       <div class="save-area">
         <button id="save-settings" class="btn">Save Settings</button>

@@ -64,6 +64,7 @@ function setupCollapsible(toggleBtnId, bodyId, startExpanded = false) {
 // Initialize all collapsible sections
 setupCollapsible('save-actions-toggle', 'save-actions-body', false);
 setupCollapsible('gemini-actions-toggle', 'gemini-actions-body', false);
+setupCollapsible('discourse-category-toggle', 'discourse-category-body', false);
 setupCollapsible('settings-toggle', 'settings-body', false);
 
 
@@ -85,7 +86,13 @@ setupCollapsible('settings-toggle', 'settings-body', false);
   const discourseApiUrlEl = document.getElementById('discourse-api-url');
   const discourseApiKeyEl = document.getElementById('discourse-api-key');
   const discourseApiUsernameEl = document.getElementById('discourse-api-username');
-  const discourseCategoryIdEl = document.getElementById('discourse-category-id');
+  const discourseCategoryEl = document.getElementById('discourse-category');
+  const fetchCategoriesBtn = document.getElementById('fetch-categories');
+  const categoryStatusEl = document.getElementById('category-status');
+  const categoryFilterEl = document.getElementById('category-filter');
+
+  // Store all categories for filtering
+  let allCategories = [];
 
   const DEFAULTS = {
     format: 'image/webp',
@@ -117,7 +124,80 @@ setupCollapsible('settings-toggle', 'settings-body', false);
     discourseApiUrlEl.value = items.discourseApiUrl || DEFAULTS.discourseApiUrl;
     discourseApiKeyEl.value = items.discourseApiKey || DEFAULTS.discourseApiKey;
     discourseApiUsernameEl.value = items.discourseApiUsername || DEFAULTS.discourseApiUsername;
-    discourseCategoryIdEl.value = items.discourseCategoryId || DEFAULTS.discourseCategoryId;
+
+    // Load cached categories and set selected value
+    chrome.storage.sync.get(['discourseCategories'], (catItems) => {
+      allCategories = catItems.discourseCategories || [];
+      populateCategoryDropdown(allCategories, items.discourseCategoryId || DEFAULTS.discourseCategoryId);
+    });
+  });
+
+  function populateCategoryDropdown(categories, selectedId) {
+    discourseCategoryEl.innerHTML = '';
+    categories.forEach(cat => {
+      const option = document.createElement('option');
+      option.value = cat.id;
+      option.textContent = cat.name;
+      if (String(cat.id) === String(selectedId)) {
+        option.selected = true;
+      }
+      discourseCategoryEl.appendChild(option);
+    });
+  }
+
+  // Filter categories as user types
+  categoryFilterEl.addEventListener('input', () => {
+    const filter = categoryFilterEl.value.toLowerCase();
+    const currentSelected = discourseCategoryEl.value;
+    const filtered = allCategories.filter(cat =>
+      cat.name.toLowerCase().includes(filter)
+    );
+    populateCategoryDropdown(filtered, currentSelected);
+  });
+
+  // Auto-save category when selection changes
+  discourseCategoryEl.addEventListener('change', () => {
+    const selectedId = discourseCategoryEl.value;
+    if (selectedId) {
+      chrome.storage.sync.set({ discourseCategoryId: selectedId });
+      const selectedCat = allCategories.find(c => String(c.id) === String(selectedId));
+      categoryStatusEl.textContent = selectedCat ? `Selected: ${selectedCat.name}` : '';
+    }
+  });
+
+  fetchCategoriesBtn.addEventListener('click', () => {
+    const currentSettings = {
+      discourseApiUrl: discourseApiUrlEl.value.trim(),
+      discourseApiKey: discourseApiKeyEl.value.trim(),
+      discourseApiUsername: discourseApiUsernameEl.value.trim(),
+    };
+
+    if (!currentSettings.discourseApiUrl || !currentSettings.discourseApiKey || !currentSettings.discourseApiUsername) {
+      categoryStatusEl.textContent = 'Please fill in API URL, Key, and Username first';
+      return;
+    }
+
+    categoryStatusEl.textContent = 'Fetching categories...';
+    console.log('Sending fetch_discourse_categories request with settings:', {
+      discourseApiUrl: currentSettings.discourseApiUrl,
+      discourseApiUsername: currentSettings.discourseApiUsername,
+      hasApiKey: !!currentSettings.discourseApiKey,
+    });
+    chrome.runtime.sendMessage({ action: 'fetch_discourse_categories', settings: currentSettings }, (response) => {
+      console.log('Received response:', response);
+      if (chrome.runtime.lastError) {
+        console.error('Chrome runtime error:', chrome.runtime.lastError);
+      }
+      if (response && response.success) {
+        allCategories = response.categories;
+        chrome.storage.sync.set({ discourseCategories: response.categories });
+        categoryFilterEl.value = '';
+        populateCategoryDropdown(allCategories, discourseCategoryEl.value);
+        categoryStatusEl.textContent = `Found ${response.categories.length} categories`;
+      } else {
+        categoryStatusEl.textContent = response?.error || 'Failed to fetch categories';
+      }
+    });
   });
 
   qualityEl.addEventListener('input', () => {
@@ -136,7 +216,6 @@ setupCollapsible('settings-toggle', 'settings-body', false);
       discourseApiUrl: discourseApiUrlEl.value,
       discourseApiKey: discourseApiKeyEl.value,
       discourseApiUsername: discourseApiUsernameEl.value,
-      discourseCategoryId: discourseCategoryIdEl.value,
     };
     chrome.storage.sync.set(newSettings, () => {
       window.close();
