@@ -8,49 +8,50 @@
       margin: 0;
       padding: 12px;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      color: #0f172a;
-      background: #f8fafc;
+      color: #e2e8f0;
+      background: #0f0f0f;
       text-align: left;
     }
     h1 {
       font-size: 18px;
       margin: 0 0 12px 0;
       text-align: center;
+      color: #fff;
     }
     .btn {
       display: block;
       width: 100%;
       padding: 10px 12px;
       margin: 8px 0;
-      border: 1px solid #2d6cdf;
-      background: #2d6cdf;
+      border: 1px solid #3b82f6;
+      background: #2563eb;
       color: #fff;
       border-radius: 8px;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
       transition: background 120ms ease, transform 60ms ease, box-shadow 120ms ease;
-      box-shadow: 0 1px 2px rgba(2, 6, 23, 0.06);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     }
-    .btn:hover { background: #2557b2; }
+    .btn:hover { background: #1d4ed8; }
     .btn:active { transform: translateY(1px); }
     hr {
       border: none;
       height: 1px;
-      background: #e2e8f0;
+      background: #2a2a2a;
       margin: 12px 0;
     }
     .card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
       border-radius: 10px;
       padding: 12px;
-      box-shadow: 0 1px 2px rgba(2, 6, 23, 0.04);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
     .card h2 {
       font-size: 13px;
       margin: 0 0 8px 0;
-      color: #334155;
+      color: #94a3b8;
       text-transform: uppercase;
       letter-spacing: 0.03em;
     }
@@ -64,7 +65,7 @@
       margin: 0 0 8px 0;
       background: transparent;
       border: none;
-      color: #334155;
+      color: #e2e8f0;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.03em;
@@ -84,7 +85,7 @@
     label {
       display: block;
       font-size: 12px;
-      color: #475569;
+      color: #94a3b8;
       margin: 8px 0 4px;
     }
     select, input[type="range"] {
@@ -92,12 +93,17 @@
     }
     select {
       padding: 8px;
-      border: 1px solid #cbd5e1;
+      border: 1px solid #3a3a3a;
       border-radius: 8px;
-      background: #fff;
+      background: #252525;
+      color: #e2e8f0;
       font-size: 13px;
     }
-    input[type="range"] { accent-color: #2d6cdf; }
+    select option {
+      background: #252525;
+      color: #e2e8f0;
+    }
+    input[type="range"] { accent-color: #3b82f6; }
     .label-row {
       display: flex;
       align-items: center;
@@ -106,13 +112,17 @@
     .muted { color: #64748b; font-size: 12px; }
     .save-area { margin-top: 10px; }
     .input {
-      width: calc(100% - 18px); /* padding and border */
+      width: calc(100% - 18px);
       padding: 8px;
-      border: 1px solid #cbd5e1;
+      border: 1px solid #3a3a3a;
       border-radius: 8px;
-      background: #fff;
+      background: #252525;
+      color: #e2e8f0;
       font-size: 13px;
       font-family: inherit;
+    }
+    .input::placeholder {
+      color: #64748b;
     }
     textarea.input {
       resize: vertical;
