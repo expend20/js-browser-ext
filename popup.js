@@ -1,33 +1,120 @@
+// Progress bar control functions
+const progressContainer = document.getElementById('progress-container');
+const progressText = document.getElementById('progress-text');
+const progressBar = document.getElementById('progress-bar');
+const progressDismiss = document.getElementById('progress-dismiss');
+let progressTimeout = null;
+
+// Dismiss button handler
+progressDismiss.addEventListener('click', () => {
+  progressContainer.classList.remove('visible', 'success', 'error');
+  document.body.classList.remove('has-progress');
+});
+
+function showProgress(message, buttonId = null) {
+  // Clear any pending hide timeout
+  if (progressTimeout) {
+    clearTimeout(progressTimeout);
+    progressTimeout = null;
+  }
+
+  // Reset state
+  progressContainer.classList.remove('success', 'error');
+  progressBar.classList.add('indeterminate');
+  progressBar.style.width = '';
+
+  // Update message and show
+  progressText.textContent = message;
+  progressContainer.classList.add('visible');
+  document.body.classList.add('has-progress');
+
+  // Add loading state to button
+  if (buttonId) {
+    const btn = document.getElementById(buttonId);
+    if (btn) btn.classList.add('loading');
+  }
+}
+
+function setProgress(percent, message = null) {
+  progressBar.classList.remove('indeterminate');
+  progressBar.style.width = percent + '%';
+  if (message) progressText.textContent = message;
+}
+
+function hideProgress(state = null, message = null, buttonId = null, delay = 3500) {
+  // Remove loading state from button
+  if (buttonId) {
+    const btn = document.getElementById(buttonId);
+    if (btn) btn.classList.remove('loading');
+  }
+
+  if (state === 'success' || state === 'error') {
+    progressBar.classList.remove('indeterminate');
+    progressContainer.classList.add(state);
+    if (message) progressText.textContent = message;
+
+    // Auto-hide only on success, errors stay visible
+    if (state === 'success') {
+      progressTimeout = setTimeout(() => {
+        progressContainer.classList.remove('visible', 'success', 'error');
+        document.body.classList.remove('has-progress');
+      }, delay);
+    }
+  } else {
+    progressContainer.classList.remove('visible', 'success', 'error');
+    document.body.classList.remove('has-progress');
+  }
+}
+
+// Action with progress feedback
+function sendActionWithProgress(action, buttonId, loadingMsg, successMsg, errorMsg) {
+  showProgress(loadingMsg, buttonId);
+
+  chrome.runtime.sendMessage({ action }, (response) => {
+    if (chrome.runtime.lastError) {
+      console.error('Action error:', chrome.runtime.lastError);
+      hideProgress('error', errorMsg || 'Operation failed', buttonId);
+      return;
+    }
+
+    if (response && response.success === false) {
+      hideProgress('error', response.error || errorMsg || 'Operation failed', buttonId);
+    } else {
+      hideProgress('success', successMsg, buttonId);
+    }
+  });
+}
+
 document.getElementById('save-screenshot').addEventListener('click', () => {
-  chrome.runtime.sendMessage({ action: 'capture' });
+  sendActionWithProgress('capture', 'save-screenshot', 'Capturing screenshot...', 'Screenshot saved', 'Screenshot failed');
 });
 
 document.getElementById('save-html').addEventListener('click', () => {
-  chrome.runtime.sendMessage({ action: 'save_html' });
+  sendActionWithProgress('save_html', 'save-html', 'Saving HTML...', 'HTML saved', 'Failed to save HTML');
 });
 
 document.getElementById('save-html-images').addEventListener('click', () => {
-  chrome.runtime.sendMessage({ action: 'save_html_images' });
+  sendActionWithProgress('save_html_images', 'save-html-images', 'Saving HTML + images...', 'HTML + images saved', 'Failed to save');
 });
 
 document.getElementById('save-visible-text').addEventListener('click', () => {
-  chrome.runtime.sendMessage({ action: 'save_visible_text' });
+  sendActionWithProgress('save_visible_text', 'save-visible-text', 'Saving text...', 'Text saved', 'Failed to save text');
 });
 
 document.getElementById('save-markdown').addEventListener('click', () => {
-  chrome.runtime.sendMessage({ action: 'save_markdown' });
+  sendActionWithProgress('save_markdown', 'save-markdown', 'Saving markdown...', 'Markdown saved', 'Failed to save');
 });
 
 document.getElementById('gemini-analyze-html').addEventListener('click', () => {
-  chrome.runtime.sendMessage({ action: 'gemini_analyze_html' });
+  sendActionWithProgress('gemini_analyze_html', 'gemini-analyze-html', 'Analyzing with Gemini...', 'Posted to Discourse', 'Analysis failed');
 });
 
 document.getElementById('gemini-analyze-markdown').addEventListener('click', () => {
-  chrome.runtime.sendMessage({ action: 'gemini_analyze_markdown' });
+  sendActionWithProgress('gemini_analyze_markdown', 'gemini-analyze-markdown', 'Analyzing with Gemini...', 'Posted to Discourse', 'Analysis failed');
 });
 
 document.getElementById('gemini-analyze-screenshot').addEventListener('click', () => {
-  chrome.runtime.sendMessage({ action: 'gemini_analyze_screenshot' });
+  sendActionWithProgress('gemini_analyze_screenshot', 'gemini-analyze-screenshot', 'Analyzing screenshot...', 'Posted to Discourse', 'Analysis failed');
 });
 
 // Reusable collapsible section handler

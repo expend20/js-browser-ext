@@ -1,15 +1,19 @@
 // Save Visible Text handler: extracts document.body.innerText and downloads as .txt
-function handleSaveVisibleText() {
+function handleSaveVisibleText(callback) {
   try {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const tab = tabs && tabs[0];
-      if (!tab) return;
+      if (!tab) {
+        if (typeof callback === 'function') callback(false);
+        return;
+      }
       // Guard: cannot access chrome://, edge://, about:, devtools:// pages
       try {
         const u = new URL(tab.url || '');
         const restrictedSchemes = new Set(['chrome:', 'edge:', 'about:', 'devtools:']);
         if (restrictedSchemes.has(u.protocol)) {
           console.warn('[save_visible_text] Cannot access restricted URL:', tab.url);
+          if (typeof callback === 'function') callback(false);
           return;
         }
       } catch (_) {}
@@ -26,6 +30,7 @@ function handleSaveVisibleText() {
       }, (results) => {
         if (chrome.runtime.lastError) {
           console.warn('[save_visible_text] executeScript error:', chrome.runtime.lastError.message);
+          if (typeof callback === 'function') callback(false);
           return;
         }
         const text = results && results[0] && results[0].result ? String(results[0].result) : '';
@@ -36,12 +41,16 @@ function handleSaveVisibleText() {
         chrome.downloads.download({ url: dataUrl, filename }, () => {
           if (chrome.runtime.lastError) {
             console.warn('[save_visible_text] download error:', chrome.runtime.lastError.message);
+            if (typeof callback === 'function') callback(false);
+          } else {
+            if (typeof callback === 'function') callback(true);
           }
         });
       });
     });
   } catch (e) {
     console.error('handleSaveVisibleText error:', e);
+    if (typeof callback === 'function') callback(false);
   }
 }
 

@@ -41,77 +41,90 @@ function getSettings(callback) {
 }
 
 // Generic Gemini handler
-function handleGeminiAnalysis(contentType, contentFetcher) {
-  getSettings(async (settings) => {
-    if (!settings.geminiApiKey) {
-      console.error('Gemini API Key is not set.');
-      // Maybe notify the user to set the key in the settings.
-      return;
-    }
-
-    try {
-      console.log(`Capturing ${contentType} content for Gemini analysis...`);
-      const content = await contentFetcher();
-      if (!content) {
-        console.error(`Failed to capture content for ${contentType}.`);
+async function handleGeminiAnalysis(contentType, contentFetcher) {
+  return new Promise((resolve) => {
+    getSettings(async (settings) => {
+      if (!settings.geminiApiKey) {
+        console.error('Gemini API Key is not set.');
+        resolve({ success: false, error: 'API key not set. Check Settings.' });
         return;
       }
-      console.log(`Captured ${contentType} data, size: ${contentType === 'image' ? content.data.length : content.length} bytes.`);
 
-      const tabs = await new Promise(resolve => chrome.tabs.query({ active: true, currentWindow: true }, resolve));
-      const tab = tabs && tabs[0];
-      if (!tab) return;
-      
-      const safeTitle = (typeof sanitizeBaseFilename === 'function') ? sanitizeBaseFilename(tab.title || 'page') : (tab.title || 'page');
+      try {
+        console.log(`Capturing ${contentType} content for Gemini analysis...`);
+        const content = await contentFetcher();
+        if (!content) {
+          console.error(`Failed to capture content for ${contentType}.`);
+          resolve({ success: false, error: 'Failed to capture content' });
+          return;
+        }
+        console.log(`Captured ${contentType} data, size: ${contentType === 'image' ? content.data.length : content.length} bytes.`);
 
-      // Save input file (if debug enabled)
-      if (settings.saveDebugFiles) {
-        if (contentType === 'html') {
-          const inputFilename = `${safeTitle}-gemini-input.html`;
-          downloadTextAsFile(content, inputFilename);
-        } else if (contentType === 'markdown') {
-          const inputFilename = `${safeTitle}-gemini-input.md`;
-          downloadTextAsFile(content, inputFilename);
-        } else if (contentType === 'image') {
-          const extension = content.mimeType.split('/')[1] || 'png';
-          const inputFilename = `${safeTitle}-gemini-input.${extension}`;
-          if (typeof downloadBase64AsFile === 'function') {
-            downloadBase64AsFile(content.dataUrl, inputFilename);
+        const tabs = await new Promise(res => chrome.tabs.query({ active: true, currentWindow: true }, res));
+        const tab = tabs && tabs[0];
+        if (!tab) {
+          resolve({ success: false, error: 'No active tab' });
+          return;
+        }
+
+        const safeTitle = (typeof sanitizeBaseFilename === 'function') ? sanitizeBaseFilename(tab.title || 'page') : (tab.title || 'page');
+
+        // Save input file (if debug enabled)
+        if (settings.saveDebugFiles) {
+          if (contentType === 'html') {
+            const inputFilename = `${safeTitle}-gemini-input.html`;
+            downloadTextAsFile(content, inputFilename);
+          } else if (contentType === 'markdown') {
+            const inputFilename = `${safeTitle}-gemini-input.md`;
+            downloadTextAsFile(content, inputFilename);
+          } else if (contentType === 'image') {
+            const extension = content.mimeType.split('/')[1] || 'png';
+            const inputFilename = `${safeTitle}-gemini-input.${extension}`;
+            if (typeof downloadBase64AsFile === 'function') {
+              downloadBase64AsFile(content.dataUrl, inputFilename);
+            }
           }
         }
+
+        const promptKey = `geminiPrompt${contentType.charAt(0).toUpperCase() + contentType.slice(1)}`;
+        const prompt = settings[promptKey];
+
+        console.log(`Sending data to Gemini for ${contentType} analysis...`);
+        const result = await callGemini(settings.geminiApiKey, settings.geminiModel, prompt, content, contentType);
+
+        console.log(`Gemini API usage for ${contentType} analysis:`, {
+          promptTokens: result.promptTokens,
+          candidateTokens: result.candidateTokens,
+          totalTokens: result.totalTokens,
+        });
+
+        // Save output file (if debug enabled)
+        if (settings.saveDebugFiles) {
+          const filename = `${safeTitle}-gemini-${contentType}-analysis.txt`;
+          downloadTextAsFile(result.text, filename);
+        }
+
+        let postTitle = `Gemini Analysis of: ${tab.title || 'a page'}`;
+        const titleMatch = result.text.match(/^#+\s*(.*)/m);
+        if (titleMatch && titleMatch[1]) {
+          postTitle = titleMatch[1].trim();
+        }
+
+        const imageContentForDiscourse = contentType === 'image' ? content : null;
+        const postBody = `Original URL: ${tab.url}\n\n${result.text}`;
+        const discourseResult = await postToDiscourse(settings, postTitle, postBody, imageContentForDiscourse);
+
+        if (discourseResult && discourseResult.success) {
+          resolve({ success: true });
+        } else {
+          resolve({ success: false, error: discourseResult?.error || 'Failed to post to Discourse' });
+        }
+
+      } catch (error) {
+        console.error(`Error during Gemini ${contentType} analysis:`, error);
+        resolve({ success: false, error: error.message || 'Analysis failed' });
       }
-
-      const promptKey = `geminiPrompt${contentType.charAt(0).toUpperCase() + contentType.slice(1)}`;
-      const prompt = settings[promptKey];
-      
-      console.log(`Sending data to Gemini for ${contentType} analysis...`);
-      const result = await callGemini(settings.geminiApiKey, settings.geminiModel, prompt, content, contentType);
-      
-      console.log(`Gemini API usage for ${contentType} analysis:`, {
-        promptTokens: result.promptTokens,
-        candidateTokens: result.candidateTokens,
-        totalTokens: result.totalTokens,
-      });
-
-      // Save output file (if debug enabled)
-      if (settings.saveDebugFiles) {
-        const filename = `${safeTitle}-gemini-${contentType}-analysis.txt`;
-        downloadTextAsFile(result.text, filename);
-      }
-
-      let postTitle = `Gemini Analysis of: ${tab.title || 'a page'}`;
-      const titleMatch = result.text.match(/^#+\s*(.*)/m);
-      if (titleMatch && titleMatch[1]) {
-        postTitle = titleMatch[1].trim();
-      }
-      
-      const imageContentForDiscourse = contentType === 'image' ? content : null;
-      const postBody = `Original URL: ${tab.url}\n\n${result.text}`;
-      await postToDiscourse(settings, postTitle, postBody, imageContentForDiscourse);
-
-    } catch (error) {
-      console.error(`Error during Gemini ${contentType} analysis:`, error);
-    }
+    });
   });
 }
 
@@ -163,47 +176,99 @@ function getScreenshotContent() {
 
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request && request.action === 'capture') {
-    if (typeof captureViaTabs === 'function') captureViaTabs();
-    return;
+  if (!request || !request.action) return;
+
+  // Screenshot capture
+  if (request.action === 'capture') {
+    if (typeof captureViaTabs === 'function') {
+      captureViaTabs(false, (result) => {
+        sendResponse({ success: !!result });
+      });
+    } else {
+      sendResponse({ success: false, error: 'Screenshot not available' });
+    }
+    return true;
   }
-  if (request && request.action === 'save_html') {
-    if (typeof handleSaveHtml === 'function') handleSaveHtml();
+
+  // Save HTML
+  if (request.action === 'save_html') {
+    if (typeof handleSaveHtml === 'function') {
+      handleSaveHtml((result) => {
+        sendResponse({ success: result !== false });
+      });
+    } else {
+      sendResponse({ success: false, error: 'Save HTML not available' });
+    }
+    return true;
   }
-  if (request && request.action === 'save_html_images') {
-    if (typeof handleSaveHtmlImages === 'function') handleSaveHtmlImages();
+
+  // Save HTML + Images
+  if (request.action === 'save_html_images') {
+    if (typeof handleSaveHtmlImages === 'function') {
+      handleSaveHtmlImages((result) => {
+        sendResponse({ success: result !== false });
+      });
+    } else {
+      sendResponse({ success: false, error: 'Save not available' });
+    }
+    return true;
   }
-  if (request && request.action === 'save_visible_text') {
-    if (typeof handleSaveVisibleText === 'function') handleSaveVisibleText();
+
+  // Save Visible Text
+  if (request.action === 'save_visible_text') {
+    if (typeof handleSaveVisibleText === 'function') {
+      handleSaveVisibleText((result) => {
+        sendResponse({ success: result !== false });
+      });
+    } else {
+      sendResponse({ success: false, error: 'Save text not available' });
+    }
+    return true;
   }
-  if (request && request.action === 'save_markdown') {
-    if (typeof handleSaveMarkdown === 'function') handleSaveMarkdown();
+
+  // Save Markdown
+  if (request.action === 'save_markdown') {
+    if (typeof handleSaveMarkdown === 'function') {
+      handleSaveMarkdown(false, (result) => {
+        sendResponse({ success: result !== false });
+      });
+    } else {
+      sendResponse({ success: false, error: 'Save markdown not available' });
+    }
+    return true;
   }
-  if (request && request.action === 'gemini_analyze_html') {
-    handleGeminiAnalysis('html', getHtmlContent);
+
+  // Gemini HTML analysis
+  if (request.action === 'gemini_analyze_html') {
+    handleGeminiAnalysis('html', getHtmlContent).then(sendResponse);
+    return true;
   }
-  if (request && request.action === 'gemini_analyze_markdown') {
-    handleGeminiAnalysis('markdown', getMarkdownContent);
+
+  // Gemini Markdown analysis
+  if (request.action === 'gemini_analyze_markdown') {
+    handleGeminiAnalysis('markdown', getMarkdownContent).then(sendResponse);
+    return true;
   }
-  if (request && request.action === 'gemini_analyze_screenshot') {
-    handleGeminiAnalysis('image', getScreenshotContent);
+
+  // Gemini Screenshot analysis
+  if (request.action === 'gemini_analyze_screenshot') {
+    handleGeminiAnalysis('image', getScreenshotContent).then(sendResponse);
+    return true;
   }
-  if (request && request.action === 'fetch_discourse_categories') {
+
+  // Fetch Discourse categories
+  if (request.action === 'fetch_discourse_categories') {
     console.log('background.js: received fetch_discourse_categories request');
-    console.log('background.js: request.settings:', request.settings);
     (async () => {
       if (typeof fetchDiscourseCategories === 'function') {
-        console.log('background.js: calling fetchDiscourseCategories...');
         const settings = request.settings || {};
         const result = await fetchDiscourseCategories(settings);
-        console.log('background.js: fetchDiscourseCategories result:', result);
         sendResponse(result);
       } else {
-        console.error('background.js: fetchDiscourseCategories is not available');
         sendResponse({ success: false, error: 'fetchDiscourseCategories not available', categories: [] });
       }
     })();
-    return true; // Keep channel open for async sendResponse
+    return true;
   }
 });
 

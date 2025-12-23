@@ -241,10 +241,11 @@ function captureViaTabs(returnContent = false, callback) {
                   reader.readAsDataURL(blob);
                 } else {
                   startDownloadFromBlob(blob, outputFilename);
+                  if (typeof callback === 'function') callback(true);
                 }
               }).catch(err => {
                 console.error('Finalizing image failed:', err);
-                if (returnContent && typeof callback === 'function') callback(null);
+                if (typeof callback === 'function') callback(returnContent ? null : false);
               });
             }
           );

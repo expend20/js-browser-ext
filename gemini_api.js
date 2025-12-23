@@ -37,7 +37,22 @@ async function callGemini(apiKey, model, prompt, content, contentType = 'text') 
     if (!response.ok) {
       const errorBody = await response.json();
       console.error('Gemini API request failed:', errorBody);
-      throw new Error(`HTTP error! status: ${response.status} - ${errorBody.error.message}`);
+      // Extract user-friendly error message
+      let userError = 'Gemini API error';
+      const status = response.status;
+      const apiMsg = errorBody?.error?.message || '';
+
+      if (status === 429 || apiMsg.includes('quota')) {
+        userError = 'Gemini quota exceeded - check billing';
+      } else if (status === 401 || status === 403 || apiMsg.includes('API key')) {
+        userError = 'Invalid Gemini API key';
+      } else if (status === 400) {
+        userError = 'Invalid request to Gemini';
+      } else if (apiMsg) {
+        // Truncate long messages
+        userError = apiMsg.length > 60 ? apiMsg.substring(0, 60) + '...' : apiMsg;
+      }
+      throw new Error(userError);
     }
 
     const data = await response.json();

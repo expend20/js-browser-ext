@@ -17,10 +17,13 @@ function downloadTextAsFile(text, filename) {
   }
 }
 
-async function handleSaveHtmlImages() {
+async function handleSaveHtmlImages(callback) {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const tab = tabs && tabs[0];
-    if (!tab) return;
+    if (!tab) {
+      if (typeof callback === 'function') callback(false);
+      return;
+    }
     const tabId = tab.id;
 
     // Step 1: collect HTML, doctype, baseUrl, and absolute image URLs in page context
@@ -110,6 +113,7 @@ async function handleSaveHtmlImages() {
           const filename = safeTitle + '.inline.html';
           try { console.log('[save_html_images] filename info:', { originalTitle: tab.title, sanitizedBase: safeTitle, finalFilename: filename }); } catch (_) {}
           downloadTextAsFile(content, filename);
+          if (typeof callback === 'function') callback(true);
         });
       });
     });

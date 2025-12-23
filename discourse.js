@@ -68,7 +68,7 @@ async function postToDiscourse(settings, title, text, imageContent = null) {
 
   if (!discourseApiUrl || !discourseApiKey || !discourseApiUsername || !discourseCategoryId) {
     console.log('Discourse settings are not fully configured. Skipping post.');
-    return;
+    return { success: false, error: 'Discourse settings incomplete' };
   }
 
   let imageUrl = '';
@@ -92,7 +92,18 @@ async function postToDiscourse(settings, title, text, imageContent = null) {
 
       if (!uploadResponse.ok) {
         const errorText = await uploadResponse.text();
-        throw new Error(`Failed to upload image to Discourse: ${uploadResponse.statusText}, ${errorText}`);
+        let userError = 'Image upload failed';
+        try {
+          const errorJson = JSON.parse(errorText);
+          if (errorJson.errors && errorJson.errors.length > 0) {
+            userError = errorJson.errors.join(', ');
+          } else if (errorJson.error) {
+            userError = errorJson.error;
+          }
+        } catch (_) {
+          userError = uploadResponse.statusText || 'Image upload failed';
+        }
+        throw new Error(userError);
       }
 
       const uploadResult = await uploadResponse.json();
@@ -129,13 +140,27 @@ async function postToDiscourse(settings, title, text, imageContent = null) {
 
     if (!postResponse.ok) {
         const errorText = await postResponse.text();
-        throw new Error(`Failed to create post on Discourse: ${postResponse.statusText}, ${errorText}`);
+        // Try to extract user-friendly error from Discourse response
+        let userError = 'Failed to post';
+        try {
+          const errorJson = JSON.parse(errorText);
+          if (errorJson.errors && errorJson.errors.length > 0) {
+            userError = errorJson.errors.join(', ');
+          } else if (errorJson.error) {
+            userError = errorJson.error;
+          }
+        } catch (_) {
+          userError = postResponse.statusText || 'Unknown error';
+        }
+        throw new Error(userError);
     }
 
     const postResult = await postResponse.json();
     console.log('Successfully posted to Discourse:', postResult);
+    return { success: true };
 
   } catch (error) {
     console.error('Error posting to Discourse:', error);
+    return { success: false, error: error.message };
   }
 }

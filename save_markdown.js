@@ -92,12 +92,16 @@ function handleSaveMarkdown(returnContent = false, callback) {
         chrome.downloads.download({ url: dataUrl, filename }, () => {
           if (chrome.runtime.lastError) {
             console.warn('[save_markdown] download error:', chrome.runtime.lastError.message);
+            if (typeof callback === 'function') callback(false);
+          } else {
+            if (typeof callback === 'function') callback(true);
           }
         });
       });
     });
   } catch (e) {
     console.error('handleSaveMarkdown error:', e);
+    if (typeof callback === 'function') callback(false);
   }
 }
 

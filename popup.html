@@ -131,6 +131,111 @@
       resize: vertical;
       min-height: 40px;
     }
+
+    /* Progress/Status Bar */
+    .progress-container {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #1a1a1a;
+      border-top: 1px solid #2a2a2a;
+      padding: 10px 12px;
+      transform: translateY(100%);
+      transition: transform 200ms ease;
+      z-index: 100;
+    }
+    .progress-container.visible {
+      transform: translateY(0);
+    }
+    .progress-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    .progress-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid #3a3a3a;
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .progress-bar-track {
+      height: 4px;
+      background: #2a2a2a;
+      border-radius: 2px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #2563eb, #3b82f6);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 300ms ease;
+    }
+    .progress-bar-fill.indeterminate {
+      width: 30%;
+      animation: indeterminate 1.2s ease-in-out infinite;
+    }
+    @keyframes indeterminate {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(400%); }
+    }
+    .progress-container.success .progress-bar-fill {
+      background: linear-gradient(90deg, #16a34a, #22c55e);
+      width: 100%;
+    }
+    .progress-container.success .progress-spinner,
+    .progress-container.error .progress-spinner {
+      display: none;
+    }
+    .progress-icon {
+      display: none;
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+    .progress-container.success .progress-icon.icon-success,
+    .progress-container.error .progress-icon.icon-error {
+      display: block;
+    }
+    .progress-container.error .progress-bar-fill {
+      background: linear-gradient(90deg, #dc2626, #ef4444);
+      width: 100%;
+    }
+    .progress-dismiss {
+      display: none;
+      background: transparent;
+      border: 1px solid #4a4a4a;
+      color: #94a3b8;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-left: auto;
+      transition: background 120ms ease, border-color 120ms ease;
+    }
+    .progress-dismiss:hover {
+      background: #2a2a2a;
+      border-color: #5a5a5a;
+    }
+    .progress-container.error .progress-dismiss {
+      display: block;
+    }
+    .btn.loading {
+      opacity: 0.7;
+      pointer-events: none;
+    }
+    body.has-progress {
+      padding-bottom: 60px;
+    }
   </style>
 </head>
 <body>
@@ -245,6 +350,27 @@
       <button id="save-markdown" class="btn">Save Markdown</button>
     </div>
   </div>
+
+  <!-- Progress/Status Bar -->
+  <div id="progress-container" class="progress-container">
+    <div class="progress-status">
+      <div class="progress-spinner"></div>
+      <svg class="progress-icon icon-success" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="7" stroke="#22c55e" stroke-width="2"/>
+        <path d="M5 8l2 2 4-4" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <svg class="progress-icon icon-error" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="7" stroke="#ef4444" stroke-width="2"/>
+        <path d="M5 5l6 6M11 5l-6 6" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <span id="progress-text">Working...</span>
+      <button id="progress-dismiss" class="progress-dismiss">Dismiss</button>
+    </div>
+    <div class="progress-bar-track">
+      <div id="progress-bar" class="progress-bar-fill indeterminate"></div>
+    </div>
+  </div>
+
   <script src="popup.js"></script>
 </body>
 </html>

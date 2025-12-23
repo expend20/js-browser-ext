@@ -15,10 +15,13 @@ function downloadTextAsFile(text, filename) {
   }
 }
 
-function handleSaveHtml() {
+function handleSaveHtml(callback) {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const tab = tabs && tabs[0];
-    if (!tab) return;
+    if (!tab) {
+      if (typeof callback === 'function') callback(false);
+      return;
+    }
     const tabId = tab.id;
     chrome.scripting.executeScript({
       target: { tabId },
@@ -38,6 +41,7 @@ function handleSaveHtml() {
       const filename = safeTitle + '.html';
       try { console.log('[save_html] filename info:', { originalTitle: tab.title, sanitizedBase: safeTitle, finalFilename: filename }); } catch (_) {}
       downloadTextAsFile(content, filename);
+      if (typeof callback === 'function') callback(true);
     });
   });
 }
